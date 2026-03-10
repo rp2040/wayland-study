@@ -17,6 +17,7 @@ dist_aclocal_DATA = wayland-scanner.m4
 dist_pkgdata_DATA =				\
 	wayland-scanner.mk			\
 	protocol/wayland.xml			\
+	protocol/wl_realtime.xml		\
 	protocol/wayland.dtd
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -79,6 +80,8 @@ libwayland_server_la_SOURCES =			\
 	src/event-loop.c
 
 nodist_libwayland_server_la_SOURCES =		\
+	protocol/wl_realtime-server-protocol.h	\
+	protocol/wl_realtime-protocol.c		\
 	protocol/wayland-server-protocol.h	\
 	protocol/wayland-protocol.c
 

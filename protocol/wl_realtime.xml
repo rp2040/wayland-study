@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="wl_realtime_protocol">
+  <interface name="wl_realtime" version="1">
+    <description summary="realtime client priority control">
+      Interface allowing clients to register for higher event processing priority.
+    </description>
+
+    <enum name="register_status">
+      <description summary="registration status code">
+        Status codes for realtime registration requests.
+      </description>
+      <entry name="success" value="0" summary="registration successful"/>
+      <entry name="denied" value="1" summary="registration denied"/>
+      <entry name="error" value="2" summary="registration failed due to error"/>
+    </enum>
+
+    <request name="register_realtime">
+      <description summary="register as realtime client">
+        Requests the compositor to prioritize this client's events.
+      </description>
+    </request>
+
+    <event name="register_response">
+      <description summary="registration result notification">
+        Notifies the client of the realtime registration result.
+      </description>
+      <arg name="status" type="uint" enum="register_status" summary="registration status"/>
+      <arg name="message" type="string" allow-null="true" summary="optional status message"/>
+    </event>
+  </interface>
+</protocol>

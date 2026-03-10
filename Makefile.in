@@ -994,6 +994,7 @@ dist_aclocal_DATA = wayland-scanner.m4
 dist_pkgdata_DATA = \
 	wayland-scanner.mk			\
 	protocol/wayland.xml			\
+	protocol/wl_realtime.xml		\
 	protocol/wayland.dtd
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -1042,6 +1043,8 @@ noinst_LTLIBRARIES = libwayland-util.la $(am__append_2)
 @ENABLE_LIBRARIES_TRUE@	src/event-loop.c
 
 @ENABLE_LIBRARIES_TRUE@nodist_libwayland_server_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	protocol/wl_realtime-server-protocol.h	\
+@ENABLE_LIBRARIES_TRUE@	protocol/wl_realtime-protocol.c		\
 @ENABLE_LIBRARIES_TRUE@	protocol/wayland-server-protocol.h	\
 @ENABLE_LIBRARIES_TRUE@	protocol/wayland-protocol.c
 

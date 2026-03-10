@@ -47,6 +47,7 @@
 #include "wayland-private.h"
 #include "wayland-server.h"
 #include "wayland-os.h"
+#include "wl_realtime-server-protocol.h"
 
 /* This is the size of the char array in struct sock_addr_un.
  * No Wayland socket can be created with a path longer than this,
@@ -72,6 +73,7 @@ struct wl_socket {
 struct wl_client {
 	struct wl_connection *connection;
 	struct wl_event_source *source;
+	struct wl_resource *realtime_resource;
 	struct wl_display *display;
 	struct wl_resource *display_resource;
 	struct wl_list link;
@@ -98,6 +100,7 @@ struct wl_display {
 	struct wl_priv_signal destroy_signal;
 	struct wl_priv_signal create_client_signal;
 
+	struct wl_global *realtime_global;
 	struct wl_array additional_shm_formats;
 
 	wl_display_global_filter_func_t global_filter;
@@ -519,6 +522,7 @@ wl_client_create(struct wl_display *display, int fd)
 
 	wl_priv_signal_init(&client->resource_created_signal);
 	client->display = display;
+	client->realtime_resource = NULL;
 	client->source = wl_event_loop_add_fd(display->loop, fd,
 					      WL_EVENT_READABLE,
 					      wl_client_connection_data, client);
@@ -958,6 +962,46 @@ display_sync(struct wl_client *client,
 }
 
 static void
+destroy_realtime_resource(struct wl_resource *resource)
+{
+	struct wl_client *client = wl_resource_get_client(resource);
+
+	if (client)
+		client->realtime_resource = NULL;
+}
+
+static void
+realtime_register_realtime(struct wl_client *client,
+			   struct wl_resource *resource)
+{
+	wl_event_source_set_realtime(client->source, 1);
+	wl_realtime_send_register_response(resource,
+					  WL_REALTIME_REGISTER_STATUS_SUCCESS,
+					  "registered as realtime client");
+}
+
+static const struct wl_realtime_interface realtime_interface = {
+	realtime_register_realtime
+};
+
+static void
+bind_realtime(struct wl_client *client, void *data,
+	      uint32_t version, uint32_t id)
+{
+	struct wl_resource *resource;
+
+	resource = wl_resource_create(client, &wl_realtime_interface, version, id);
+	if (resource == NULL) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	client->realtime_resource = resource;
+	wl_resource_set_implementation(resource, &realtime_interface,
+				       data, destroy_realtime_resource);
+}
+
+static void
 unbind_resource(struct wl_resource *resource)
 {
 	wl_list_remove(&resource->link);
@@ -1066,6 +1110,15 @@ wl_display_create(void)
 	display->global_filter_data = NULL;
 
 	wl_array_init(&display->additional_shm_formats);
+	display->realtime_global = wl_global_create(display,
+					   &wl_realtime_interface,
+					   1, display, bind_realtime);
+	if (display->realtime_global == NULL) {
+		wl_array_release(&display->additional_shm_formats);
+		wl_event_loop_destroy(display->loop);
+		free(display);
+		return NULL;
+	}
 
 	return display;
 }
@@ -1128,6 +1181,9 @@ wl_display_destroy(struct wl_display *display)
 		wl_socket_destroy(s);
 	}
 	wl_event_loop_destroy(display->loop);
+
+	if (display->realtime_global)
+		display->realtime_global = NULL;
 
 	wl_list_for_each_safe(global, gnext, &display->global_list, link)
 		free(global);
