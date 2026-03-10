@@ -159,6 +159,12 @@ int
 wl_event_source_remove(struct wl_event_source *source);
 
 void
+wl_event_source_set_realtime(struct wl_event_source *source, int realtime);
+
+int
+wl_event_source_get_realtime(struct wl_event_source *source);
+
+void
 wl_event_source_check(struct wl_event_source *source);
 
 int

@@ -65,6 +65,7 @@ struct wl_event_source {
 	struct wl_list link;
 	void *data;
 	int fd;
+	int realtime;
 };
 
 struct wl_event_source_fd {
@@ -112,6 +113,7 @@ add_source(struct wl_event_loop *loop,
 
 	source->loop = loop;
 	source->data = data;
+	source->realtime = 0;
 	wl_list_init(&source->link);
 
 	memset(&ep, 0, sizeof ep);
@@ -458,6 +460,18 @@ wl_event_source_check(struct wl_event_source *source)
 	wl_list_insert(source->loop->check_list.prev, &source->link);
 }
 
+WL_EXPORT void
+wl_event_source_set_realtime(struct wl_event_source *source, int realtime)
+{
+	source->realtime = !!realtime;
+}
+
+WL_EXPORT int
+wl_event_source_get_realtime(struct wl_event_source *source)
+{
+	return source->realtime;
+}
+
 /** Remove an event source from its event loop
  *
  * \param source The event source to be removed.
@@ -637,7 +651,13 @@ wl_event_loop_dispatch(struct wl_event_loop *loop, int timeout)
 
 	for (i = 0; i < count; i++) {
 		source = ep[i].data.ptr;
-		if (source->fd != -1)
+		if (source->fd != -1 && source->realtime)
+			source->interface->dispatch(source, &ep[i]);
+	}
+
+	for (i = 0; i < count; i++) {
+		source = ep[i].data.ptr;
+		if (source->fd != -1 && !source->realtime)
 			source->interface->dispatch(source, &ep[i]);
 	}
 
